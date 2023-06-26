@@ -1,5 +1,6 @@
 package com.example.jetpackcomposetaskapp.ui.theme.addTasks.ui
 
 import androidx.lifecycle.ViewModel
+import javax.inject.Inject
 
-class TasksViewModel : ViewModel()
+class TasksViewModel @Inject constructor() : ViewModel()
