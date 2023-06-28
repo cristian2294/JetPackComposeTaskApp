@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">JetPackComposeTaskApp</string>
+
+    <string name="task_screen_add_task">Add a task</string>
 </resources>
