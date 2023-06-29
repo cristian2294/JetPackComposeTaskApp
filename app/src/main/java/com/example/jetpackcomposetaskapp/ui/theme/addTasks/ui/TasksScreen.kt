@@ -18,6 +18,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -27,22 +28,54 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import com.example.jetpackcomposetaskapp.ui.theme.addTasks.ui.TaskState.Loading
+import com.example.jetpackcomposetaskapp.ui.theme.addTasks.ui.TaskState.Success
 import com.example.jetpackcomposetaskapp.ui.theme.addTasks.ui.model.TaskModel
 
 @Composable
 fun TaskScreen(tasksViewModel: TasksViewModel) {
     val showDialog: Boolean by tasksViewModel.showDialog.observeAsState(initial = false)
 
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val uiState by produceState<TaskState>(
+        initialValue = Loading,
+        key1 = lifecycle,
+        key2 = tasksViewModel,
+    ) {
+        lifecycle.repeatOnLifecycle(state = Lifecycle.State.STARTED) {
+            tasksViewModel.uiState.collect {
+                value = it
+            }
+        }
+    }
+
+    when (uiState) {
+        is TaskState.Error -> TODO()
+        Loading -> CircularProgressIndicator()
+        is Success -> ShowTaskScreen(
+            tasksViewModel,
+            showDialog,
+            (uiState as Success).tasks,
+        )
+    }
+}
+
+@Composable
+fun ShowTaskScreen(tasksViewModel: TasksViewModel, showDialog: Boolean, tasks: List<TaskModel>) {
     Box(modifier = Modifier.fillMaxSize()) {
         AddTaskDialog(
             show = showDialog,
@@ -55,13 +88,12 @@ fun TaskScreen(tasksViewModel: TasksViewModel) {
                 .padding(16.dp),
             tasksViewModel,
         )
-        TaskList(tasksViewModel)
+        TaskList(tasksViewModel, tasks)
     }
 }
 
 @Composable
-fun TaskList(tasksViewModel: TasksViewModel) {
-    val tasks: List<TaskModel> = tasksViewModel.tasks
+fun TaskList(tasksViewModel: TasksViewModel, tasks: List<TaskModel>) {
     LazyColumn() {
         items(tasks, key = { it.id }) { task ->
             ItemTask(taskModel = task, tasksViewModel = tasksViewModel)
